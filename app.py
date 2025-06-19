@@ -10,14 +10,14 @@ from prompt import chat_prompt
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5503"])
+CORS(app)  # Temporarily allow all origins for debugging
 
 # Check for OpenAI API key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise EnvironmentError("OPENAI_API_KEY not found in environment variables. Please set it in your .env file.")
 
-print("Loaded API Key:", os.getenv("OPENAI_API_KEY"))
+print("Loaded API Key:", OPENAI_API_KEY)
 
 # Load FAISS vector store with error handling
 try:
@@ -33,7 +33,7 @@ except Exception as e:
     vectorstore = None
     qa = None
 
-@app.route('/chat', methods=['POST'])
+@app.route('/chat', methods=['POST'])  # 🔄 Endpoint should match frontend
 def chat():
     if qa is None:
         return jsonify({"response": "AI backend is not ready. Please try again later."}), 503
@@ -44,7 +44,6 @@ def chat():
         return jsonify({"response": "No message provided."}), 400
 
     try:
-        # Format the prompt with user input
         formatted_prompt = chat_prompt.format(input=user_input)
         response = qa.run(formatted_prompt)
         return jsonify({"response": response})
@@ -52,7 +51,6 @@ def chat():
         print(f"Error during QA chain run: {e}")
         return jsonify({"response": "Sorry, there was an error processing your request. Please try again later."}), 500
 
-# Optional: Add a simple homepage route so visiting / doesn't show 404
 @app.route('/')
 def index():
     return "AI Chatbot Backend is Running!"
@@ -60,5 +58,3 @@ def index():
 if __name__ == '__main__':
     print("WARNING: Running in debug mode. Do not use debug=True in production!")
     app.run(host='0.0.0.0', port=5000)
-
-
